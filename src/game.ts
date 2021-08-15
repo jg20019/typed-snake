@@ -103,15 +103,25 @@ function turn(snake: Snake, direction: direction): Snake {
   return snake;
 }
 
+function randInt(a: number, b: number): number {
+  return a + Math.floor(Math.random() * b);
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(Math.max(n, min), max);
+}
+
 function generateFood(segments: Point[]): Point{
-  let maxX = (WIDTH / SQUARE_SIZE) - SQUARE_SIZE * 3;
-  let maxY = (HEIGHT / SQUARE_SIZE) - SQUARE_SIZE * 3;
-  let x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
-  let y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
+  const min = 5;
+  let maxX = (WIDTH / SQUARE_SIZE) - min;
+  let maxY = (HEIGHT / SQUARE_SIZE) - min;
+
+  let x = clamp(Math.floor(Math.random() * maxX), min, maxX);
+  let y = clamp(Math.floor(Math.random() * maxY), min, maxY);
   
   while(collides([x,y], segments)) {
-    x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
-    y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
+    x = clamp(Math.floor(Math.random() * maxX), min, maxX);
+    y = clamp(Math.floor(Math.random() * maxY), min, maxY);
   } 
   return [x,y]
 }

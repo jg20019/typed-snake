@@ -86,14 +86,21 @@ function turn(snake, direction) {
     }
     return snake;
 }
+function randInt(a, b) {
+    return a + Math.floor(Math.random() * b);
+}
+function clamp(n, min, max) {
+    return Math.min(Math.max(n, min), max);
+}
 function generateFood(segments) {
-    var maxX = (WIDTH / SQUARE_SIZE) - SQUARE_SIZE * 3;
-    var maxY = (HEIGHT / SQUARE_SIZE) - SQUARE_SIZE * 3;
-    var x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
-    var y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
+    var min = 5;
+    var maxX = (WIDTH / SQUARE_SIZE) - min;
+    var maxY = (HEIGHT / SQUARE_SIZE) - min;
+    var x = clamp(Math.floor(Math.random() * maxX), min, maxX);
+    var y = clamp(Math.floor(Math.random() * maxY), min, maxY);
     while (collides([x, y], segments)) {
-        x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
-        y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
+        x = clamp(Math.floor(Math.random() * maxX), min, maxX);
+        y = clamp(Math.floor(Math.random() * maxY), min, maxY);
     }
     return [x, y];
 }
