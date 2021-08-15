@@ -1,0 +1,24 @@
+{
+  "name": "snake",
+  "version": "1.0.0",
+  "description": "An implementation of snake in Typescript",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jg20019/typed-snake.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jg20019/typed-snake/issues"
+  },
+  "homepage": "https://github.com/jg20019/typed-snake#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
