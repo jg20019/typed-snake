@@ -1,11 +1,46 @@
 <!doctype html>
 <html> 
   <head>
+    <title> Snake </title> 
+    <style> 
+      body {
+        margin: 10px auto;
+        max-width: 500px;
+        min-width: 500px;
+        font-family: monospace;
+      }
+      #scoreContainer {
+        width: 500px; 
+        display: flex;
+        justify-content: space-between;
+      }
+      #score, #highScore {
+        font-size: 20px;
+      }
+      a {
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 20px;
+        font-size: 20px; 
+      }
+      a:hover {
+        color: green;
+        transform: scale(1.5);
+      } 
+    </style>
   </head>
   <body>
     <h1> Snake </h1>
-    <div id="app"></div>
+    <div id="container"> 
+      <div id="scoreContainer">
+        <p id="score"> Score: 0</p>
+        <p id="highScore"> High Score: </p> 
+      </div>
+      <div id="game"></div>
+    </div>
     <script type="text/javascript" src="../dist/game.js"></script>
     <script> run() </script>
+    <a href="https://github.com/jg20019/typed-snake"> [ View Source Here ] </a>
   </body>
 </html>

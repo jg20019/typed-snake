@@ -2,6 +2,14 @@
 var WIDTH = 500;
 var HEIGHT = 500;
 var SQUARE_SIZE = 10;
+var game = document.getElementById("game");
+var canvas = document.createElement("canvas");
+var ctx = canvas.getContext('2d');
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
+game === null || game === void 0 ? void 0 : game.appendChild(canvas);
+var scoreEl = document.getElementById('score');
+var highScoreEl = document.getElementById('highScore');
 function collides(point, otherPoints) {
     for (var _i = 0, otherPoints_1 = otherPoints; _i < otherPoints_1.length; _i++) {
         var otherPoint = otherPoints_1[_i];
@@ -79,13 +87,13 @@ function turn(snake, direction) {
     return snake;
 }
 function generateFood(segments) {
-    var maxX = WIDTH / SQUARE_SIZE;
-    var maxY = HEIGHT / SQUARE_SIZE;
-    var x = Math.floor(Math.random() * maxX);
-    var y = Math.floor(Math.random() * maxY);
+    var maxX = (WIDTH / SQUARE_SIZE) - SQUARE_SIZE * 3;
+    var maxY = (HEIGHT / SQUARE_SIZE) - SQUARE_SIZE * 3;
+    var x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
+    var y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
     while (collides([x, y], segments)) {
-        x = Math.floor(Math.random() * maxX);
-        y = Math.floor(Math.random() * maxY);
+        x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
+        y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
     }
     return [x, y];
 }
@@ -109,18 +117,28 @@ function drawFood(ctx, food) {
     var x = food[0], y = food[1];
     ctx.fillRect(x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 }
-function run() {
-    var app = document.getElementById("app");
-    var canvas = document.createElement("canvas");
-    var ctx = canvas.getContext('2d');
-    canvas.width = WIDTH;
-    canvas.height = HEIGHT;
-    app === null || app === void 0 ? void 0 : app.appendChild(canvas);
+function initModel() {
+    // Initializes model and returns true if successfully initialize
     if (ctx) {
         var snake = createSnake(WIDTH / SQUARE_SIZE / 2, HEIGHT / SQUARE_SIZE / 2);
         var segments = getSegments(snake);
         var food = generateFood(segments);
-        model = { ctx: ctx, snake: snake, food: food, last: 0, dt: 0, running: true };
+        model = { ctx: ctx, snake: snake, food: food, last: 0, dt: 0, running: true, score: 0, highScore: 0 };
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+function resetModel() {
+    var snake = createSnake(WIDTH / SQUARE_SIZE / 2, HEIGHT / SQUARE_SIZE / 2);
+    var segments = getSegments(snake);
+    var food = generateFood(segments);
+    model = Object.assign({}, model, { snake: snake, food: food, last: 0, dt: 0, running: true, score: 0 });
+    return true;
+}
+function run() {
+    if (initModel()) {
         gameLoop();
     }
     else {
@@ -128,12 +146,37 @@ function run() {
     }
 }
 function render(model) {
-    var ctx = model.ctx, snake = model.snake, food = model.food;
+    var ctx = model.ctx, snake = model.snake, food = model.food, score = model.score, highScore = model.highScore;
     drawBackground(ctx);
-    drawFood(ctx, food);
-    drawSnake(ctx, snake);
+    if (scoreEl) {
+        scoreEl.innerText = "Score: " + score;
+    }
+    if (highScoreEl) {
+        highScoreEl.innerText = "High Score: " + highScore;
+    }
+    if (model.running) {
+        drawFood(ctx, food);
+        drawSnake(ctx, snake);
+    }
+    else {
+        ctx.font = "40px monospace";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "white";
+        ctx.fillText("Game Over", WIDTH / 2, HEIGHT / 2);
+        ctx.font = "20px monospace";
+        ctx.fillText("[Press any key to place again]", WIDTH / 2, HEIGHT / 2 + 50);
+    }
+}
+function increaseScore(model) {
+    var score = model.score, highScore = model.highScore;
+    var newScore = score + 1;
+    var newHighScore = Math.max(newScore, highScore);
+    return [newScore, newHighScore];
 }
 function update(model) {
+    if (!model.running) {
+        return model;
+    }
     var snake = updateSnake(model.snake);
     var _a = snake.head, x = _a[0], y = _a[1];
     // collision detection
@@ -145,13 +188,17 @@ function update(model) {
     }
     else if (collides(model.food, [snake.head])) {
         snake = grow(snake);
+        var _b = increaseScore(model), score = _b[0], highScore = _b[1];
         var food = generateFood(getSegments(snake));
-        return Object.assign({}, model, { snake: snake, food: food });
+        return Object.assign({}, model, { score: score, highScore: highScore, snake: snake, food: food });
     }
     return Object.assign({}, model, { snake: snake });
 }
 document.addEventListener('keypress', function (event) {
-    if (event.key == "w") {
+    if (!model.running) {
+        resetModel();
+    }
+    else if (event.key == "w") {
         model.snake = turn(model.snake, "up");
     }
     else if (event.key == "a") {
@@ -165,7 +212,12 @@ document.addEventListener('keypress', function (event) {
     }
 });
 function step(timestamp) {
-    model.dt += timestamp - model.last;
+    if (model.last == 0) {
+        model.dt = 0;
+    }
+    else {
+        model.dt += timestamp - model.last;
+    }
     model.last = timestamp;
     if (model.dt >= 30) {
         model.dt -= 30;
@@ -175,13 +227,8 @@ function step(timestamp) {
 }
 function gameLoop() {
     render(model);
-    if (model.running) {
-        requestAnimationFrame(function (timestamp) {
-            model = step(timestamp);
-            gameLoop();
-        });
-    }
-    else {
-        console.log('game over');
-    }
+    requestAnimationFrame(function (timestamp) {
+        model = step(timestamp);
+        gameLoop();
+    });
 }

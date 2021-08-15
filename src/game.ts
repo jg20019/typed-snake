@@ -2,6 +2,18 @@ const WIDTH = 500;
 const HEIGHT = 500;
 const SQUARE_SIZE = 10;
 
+const game = document.getElementById("game");
+
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext('2d');
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
+game?.appendChild(canvas);
+
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('highScore'); 
+
+
 type Point = [number, number];
 
 function collides(point: Point, otherPoints: Point[]): boolean {
@@ -92,16 +104,15 @@ function turn(snake: Snake, direction: direction): Snake {
 }
 
 function generateFood(segments: Point[]): Point{
-  let maxX = WIDTH / SQUARE_SIZE;
-  let maxY = HEIGHT / SQUARE_SIZE;
-  let x = Math.floor(Math.random() * maxX);
-  let y = Math.floor(Math.random() * maxY);
+  let maxX = (WIDTH / SQUARE_SIZE) - SQUARE_SIZE * 3;
+  let maxY = (HEIGHT / SQUARE_SIZE) - SQUARE_SIZE * 3;
+  let x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
+  let y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
   
   while(collides([x,y], segments)) {
-    x = Math.floor(Math.random() * maxX);
-    y = Math.floor(Math.random() * maxY);
+    x = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxX);
+    y = SQUARE_SIZE * 3 + Math.floor(Math.random() * maxY);
   } 
-
   return [x,y]
 }
 
@@ -114,6 +125,8 @@ interface Model {
   running: boolean;
   dt: number;
   last: number;
+  score: number;
+  highScore: number;
 };
 
 let model: Model; 
@@ -139,22 +152,30 @@ function drawFood(ctx: CanvasRenderingContext2D, food: Point) {
   ctx.fillRect(x * SQUARE_SIZE, y * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 }
 
+function initModel(): boolean {
+    // Initializes model and returns true if successfully initialize
+    if (ctx) {
+      const snake = createSnake(WIDTH / SQUARE_SIZE / 2, HEIGHT / SQUARE_SIZE / 2);
+      const segments = getSegments(snake); 
+      const food = generateFood(segments);
+      model = {ctx, snake, food, last: 0, dt: 0, running: true, score: 0, highScore: 0};
+      return true;
+    } else {
+      return false;
+    }
+} 
+
+function resetModel(): boolean {
+  const snake = createSnake(WIDTH / SQUARE_SIZE / 2, HEIGHT / SQUARE_SIZE / 2);
+  const segments = getSegments(snake); 
+  const food = generateFood(segments);
+  model = Object.assign({}, model, {snake, food, last: 0, dt: 0, running: true, score: 0});
+  return true;
+}
+
 function run() {
-  const app = document.getElementById("app");
 
-  const canvas= document.createElement("canvas");
-  const ctx = canvas.getContext('2d');
-
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
-
-  app?.appendChild(canvas);
-
-  if (ctx) {
-    const snake = createSnake(WIDTH / SQUARE_SIZE / 2, HEIGHT / SQUARE_SIZE / 2);
-    const segments = getSegments(snake); 
-    const food = generateFood(segments);
-    model = {ctx, snake, food, last: 0, dt: 0, running: true};
+  if (initModel()) {
     gameLoop(); 
   } else {
     console.log('Error: Failed to get context'); 
@@ -162,13 +183,40 @@ function run() {
 }
 
 function render(model: Model) {
-  const {ctx, snake, food} = model;
+  const {ctx, snake, food, score, highScore} = model;
   drawBackground(ctx);
-  drawFood(ctx, food);
-  drawSnake(ctx, snake);
+  if (scoreEl) {
+    scoreEl.innerText = `Score: ${score}`;
+  }
+  if (highScoreEl) {
+    highScoreEl.innerText = `High Score: ${highScore}`;
+  }
+
+  if (model.running) {
+    drawFood(ctx, food);
+    drawSnake(ctx, snake);
+  } else {
+    ctx.font = "40px monospace"; 
+    ctx.textAlign = "center";
+    ctx.fillStyle = "white";
+    ctx.fillText("Game Over", WIDTH / 2, HEIGHT / 2);
+
+    ctx.font = "20px monospace";
+    ctx.fillText("[Press any key to place again]", WIDTH / 2, HEIGHT / 2 + 50);
+  }
+}
+
+function increaseScore(model: Model): [number, number] {
+  const {score, highScore} = model;
+  const newScore = score + 1;
+  const newHighScore = Math.max(newScore, highScore);
+  return [newScore, newHighScore];
 }
 
 function update(model: Model): Model {
+  if (!model.running) {
+    return model;
+  }
   let snake = updateSnake(model.snake);
   const [x,y] = snake.head;
 
@@ -179,14 +227,17 @@ function update(model: Model): Model {
     return Object.assign({}, model, {snake, running: false});
   } else if (collides(model.food, [snake.head])) {
     snake = grow(snake);
+    const [score, highScore] = increaseScore(model);
     const food = generateFood(getSegments(snake));
-    return Object.assign({}, model, {snake, food});
+    return Object.assign({}, model, {score, highScore, snake, food});
   }
   return Object.assign({}, model, {snake});
 }
 
 document.addEventListener('keypress', function (event) {
-  if (event.key == "w") {
+  if (!model.running) {
+    resetModel();
+  } else if (event.key == "w") {
     model.snake = turn(model.snake, "up"); 
   } else if (event.key == "a") {
     model.snake = turn(model.snake, "left"); 
@@ -194,11 +245,15 @@ document.addEventListener('keypress', function (event) {
     model.snake = turn(model.snake, "down"); 
   } else if (event.key == "d") {
     model.snake = turn(model.snake, "right"); 
-  } 
+  }
 });
 
 function step(timestamp: number): Model {
-  model.dt += timestamp - model.last;
+  if (model.last == 0) {
+    model.dt = 0;
+  } else {
+    model.dt += timestamp - model.last;
+  }
   model.last = timestamp;
   if (model.dt >= 30) {
     model.dt -= 30; 
@@ -209,13 +264,9 @@ function step(timestamp: number): Model {
 
 function gameLoop() {
   render(model);
-  if (model.running) {
-    requestAnimationFrame((timestamp) => {
+  requestAnimationFrame((timestamp) => {
       model = step(timestamp);
       gameLoop();
     });
-  } else {
-    console.log('game over');
-  }
 }
 
