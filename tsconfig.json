@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "outDir": "dist",
+    "strict": true, 
+    "target": "ES3",
+    "lib": ["es2015", "DOM"]
+  },
+  "include": [
+    "src/*"
+  ]
+}
