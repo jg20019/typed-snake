@@ -6,3 +6,5 @@ Run npm install to install express and npm start to start the server.
 
 Visit running game at localhost:5000 or whatever port you set the PORT
 environment variable to. 
+
+You can play the demo [here](https://gentle-peak-67784.herokuapp.com/)
